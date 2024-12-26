@@ -2,6 +2,8 @@ import tkinter
 import customtkinter
 from PIL import Image
 
+APP_FONT = "Roboto"
+
 # Creates window
 app = customtkinter.CTk()
 app.geometry("400x400")
@@ -9,7 +11,7 @@ app.title("Image Filterer")
 for i in range(3):
     app.grid_columnconfigure(i, weight=1)
 
-APP_FONT = "Roboto"
+# TODO: implement scrollbar
 
 # Display main header
 TITLE_SIZE = 24
@@ -35,7 +37,7 @@ def upload_new_image():
     # TODO: implement
     print("Test")
 
-upload_image_button = customtkinter.CTkButton(app, text="Upload image", command=upload_new_image())
+upload_image_button = customtkinter.CTkButton(app, text="Upload image", command=upload_new_image)
 #upload_image_button.grid(pady=20)
 #UPLOAD_BUTTON_ROW = upload_image_button.grid_info()['row']
 
@@ -52,6 +54,7 @@ if image_filename != "":
     #image_label.grid()
 
 # Display filtering options
+# Make sure these functions are only called once
 def edge_detector_button_event():
     # TODO: implement
     print("radiobutton toggled, current value:", selected_filter.get())
@@ -88,8 +91,19 @@ filtered_image_ctk = customtkinter.CTkImage(light_image=filtered_image, dark_ima
 filtered_image_label = customtkinter.CTkLabel(app, image=filtered_image_ctk, text="")
 
 # Display save image button and download image button
+def save_image():
+    # TODO: implement
+    print("saved")
 
-# TODO: implement
+def download_image():
+    # TODO: implement
+    print("downloaded")
+
+save_image_button = customtkinter.CTkButton(app, text="Save Image", command=save_image)
+download_image_button = customtkinter.CTkButton(app, text="Download Image", command=download_image)
+save_image_button.grid(column=0)
+SAVE_BUTTON_ROW = save_image_button.grid_info()['row']
+download_image_button.grid(row=SAVE_BUTTON_ROW, column=1)
 
 # Saved images database
 
