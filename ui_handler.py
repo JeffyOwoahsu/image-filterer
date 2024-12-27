@@ -9,6 +9,7 @@ from io_handler import validate_image
 APP_FONT = "Roboto"
 TITLE_SIZE = 24
 SUBHEADING_SIZE = 16
+POPUP_SIZE = 14
 CENTER_COLUMN = 1
 BUTTON_PADX, BUTTON_PADY = 5, 5
 
@@ -37,60 +38,14 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         # Create upload image button
         self.upload_image_label = customtkinter.CTkLabel(self, text="Upload an image (.png & .jpeg accepted)", font=(APP_FONT, SUBHEADING_SIZE - 2))
         self.upload_image_label.grid(column=CENTER_COLUMN)
-        self.upload_image_button = customtkinter.CTkButton(self, text="Upload image", command=upload_new_image)
+        self.upload_image_button = customtkinter.CTkButton(self, text="Upload image", command=lambda: upload_new_image(self))
         self.upload_image_button.grid(column=CENTER_COLUMN, pady=5)
         self.UPLOAD_BUTTON_ROW = self.upload_image_button.grid_info()['row']
 
-        # TODO: The following components depend on if an image is successfully updated
-
-        # Display uploaded image
-        # TODO: uploaded image is dependant on the file that is uploaded
-        image_filename = "d5m0yyl-279d77c8-dfbe-49e9-a009-63e87664d23a.png"  # return value will be stored here
-        if image_filename != "":
-            uploaded_image = Image.open(image_filename)
-            window_width, window_height = uploaded_image.size
-            uploaded_image_ctk = customtkinter.CTkImage(light_image=uploaded_image, dark_image=uploaded_image,
-                                                        size=(window_width, window_height))
-            image_label = customtkinter.CTkLabel(self, image=uploaded_image_ctk, text="")
-            # image_label.grid(column=CENTER_COLUMN)
-
-        selected_filter = tkinter.IntVar(value=0)
-        edge_detector_button = customtkinter.CTkRadioButton(self, text="Edge Detector",
-                                                            command=edge_detector_button_event,
-                                                            variable=selected_filter, value=1)
-        standard_blur_button = customtkinter.CTkRadioButton(self, text="Standard Blur",
-                                                            command=standard_blur_button_event,
-                                                            variable=selected_filter, value=2)
-        gaussian_blur_button = customtkinter.CTkRadioButton(self, text="Gaussian Blur",
-                                                            command=gaussian_blur_button_event,
-                                                            variable=selected_filter, value=3)
-
-        edge_detector_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
-        radio_button_row = edge_detector_button.grid_info()['row']
-        standard_blur_button.grid(column=1, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY)
-        gaussian_blur_button.grid(column=2, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
-
-        # Display filtered image
-        # TODO: setting filtered image as a result of convolution
-        filtered_image = Image.open("456a3ef5ad740d98ff78fab775c69c98.jpg")  # Returned image will be stored here
-        filtered_image_width, filtered_image_height = filtered_image.size
-        filtered_image_ctk = customtkinter.CTkImage(light_image=filtered_image, dark_image=filtered_image,
-                                                    size=(filtered_image_width, filtered_image_height))
-        filtered_image_label = customtkinter.CTkLabel(self, image=filtered_image_ctk, text="")
-        # filtered_image_label.grid(column=CENTER_COLUMN)
-
-        # Save and download buttons
-        save_image_button = customtkinter.CTkButton(self, text="Save Image", command=save_image)
-        download_image_button = customtkinter.CTkButton(self, text="Download Image", command=download_image)
-
-        save_image_button.grid(column=1, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
-        save_button_row = save_image_button.grid_info()['row']
-        download_image_button.grid(row=save_button_row, column=2, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
-
         # Saved images database
         # TODO: implement; have it so that it dynamically changes rows
-        saved_images_label = customtkinter.CTkLabel(self, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
-        saved_images_label.grid(column=CENTER_COLUMN)
+       # saved_images_label = customtkinter.CTkLabel(self, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
+       # saved_images_label.grid(column=CENTER_COLUMN)
 
 
 class App(customtkinter.CTk):
@@ -106,14 +61,68 @@ class App(customtkinter.CTk):
 
 
 # Upload image button
-# Supported files are JPEG and PNG
-def upload_new_image():
+def upload_new_image(self):
     filepath = filedialog.askopenfile().name
     if validate_image(filepath):
-        print("yay")
-    else:
-        print("nuh uh")
+        display_uploaded_image(self, filepath)
+    else: # TODO: do this better
+        error_popup = customtkinter.CTkFrame(self, width=300, height=150, corner_radius=10)
+        error_popup.place(relx=0.5, rely=0.5, anchor="center")
 
+        error_message = customtkinter.CTkLabel(error_popup, text="File type not supported", font=(APP_FONT, POPUP_SIZE))
+        error_message.pack()
+        ok_button = customtkinter.CTkButton(error_popup, text="Ok", command=error_popup.destroy)
+        ok_button.pack()
+        return ""
+
+def display_uploaded_image(self, filepath):
+    # Display uploaded image
+    image_filename = filepath
+    uploaded_image = Image.open(image_filename)
+    window_width, window_height = uploaded_image.size
+    uploaded_image_ctk = customtkinter.CTkImage(light_image=uploaded_image, dark_image=uploaded_image,
+                                                    size=(window_width, window_height))
+    image_label = customtkinter.CTkLabel(self, image=uploaded_image_ctk, text="")
+    image_label.grid(column=CENTER_COLUMN)
+    display_radio_buttons(self)
+
+def display_radio_buttons(self):
+    selected_filter = tkinter.IntVar(value=0)
+    edge_detector_button = customtkinter.CTkRadioButton(self, text="Edge Detector",
+                                                        command=edge_detector_button_event,
+                                                        variable=selected_filter, value=1)
+    standard_blur_button = customtkinter.CTkRadioButton(self, text="Standard Blur",
+                                                        command=standard_blur_button_event,
+                                                        variable=selected_filter, value=2)
+    gaussian_blur_button = customtkinter.CTkRadioButton(self, text="Gaussian Blur",
+                                                        command=gaussian_blur_button_event,
+                                                        variable=selected_filter, value=3)
+
+    edge_detector_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
+    radio_button_row = edge_detector_button.grid_info()['row']
+    standard_blur_button.grid(column=1, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY)
+    gaussian_blur_button.grid(column=2, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
+
+
+def display_filtered_image(self):
+    # Display filtered image
+    # TODO: setting filtered image as a result of convolution
+    filtered_image = Image.open("456a3ef5ad740d98ff78fab775c69c98.jpg")  # Returned image will be stored here
+    filtered_image_width, filtered_image_height = filtered_image.size
+    filtered_image_ctk = customtkinter.CTkImage(light_image=filtered_image, dark_image=filtered_image,
+                                                size=(filtered_image_width, filtered_image_height))
+    filtered_image_label = customtkinter.CTkLabel(self, image=filtered_image_ctk, text="")
+    # filtered_image_label.grid(column=CENTER_COLUMN)
+    display_save_and_download_buttons(self)
+
+def display_save_and_download_buttons(self):
+    # Save and download buttons
+    save_image_button = customtkinter.CTkButton(self, text="Save Image", command=save_image)
+    download_image_button = customtkinter.CTkButton(self, text="Download Image", command=download_image)
+
+    save_image_button.grid(column=1, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
+    save_button_row = save_image_button.grid_info()['row']
+    download_image_button.grid(row=save_button_row, column=2, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 
 # Display filtering options
 # Make sure these functions are only called once
