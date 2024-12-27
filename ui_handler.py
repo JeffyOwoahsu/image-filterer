@@ -1,25 +1,51 @@
 import tkinter
 from random import uniform
+from tkinter import Canvas
 
 import customtkinter
 from PIL import Image
 
 APP_FONT = "Roboto"
 
+class MyFrame(customtkinter.CTkScrollableFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+
+        # add widgets onto the frame...
+        self.label = customtkinter.CTkLabel(self)
+        self.label.grid(row=0, column=0, padx=20)
+
+
+class App(customtkinter.CTk):
+    def __init__(self):
+        super().__init__()
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        self.my_frame = MyFrame(master=self, width=300, height=200, corner_radius=0, fg_color="transparent")
+        self.my_frame.grid(row=0, column=0, sticky="nsew")
+
+
 # Creates window
 app = customtkinter.CTk()
-app.geometry("400x400")
 app.title("Image Filterer")
+
+WINDOW_WIDTH = app.winfo_screenwidth()
+WINDOW_HEIGHT = app.winfo_screenheight()
+app.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}-10+0")
+
 app.columnconfigure((0,1,2), weight=1, uniform='a')
 CENTER_COLUMN = 1
 
-# TODO: implement scrollbar
+# TODO: implement scrollbar w/ mousewheel scrolling
+scrollable_frame = customtkinter.CTkScrollableFrame(app, width=WINDOW_WIDTH, height=WINDOW_HEIGHT)
+
 
 # Display main header
 TITLE_SIZE = 24
 TITLE_ROW = 0
 title_label = customtkinter.CTkLabel(app, text="Image Filterer", font=(APP_FONT, TITLE_SIZE))
-title_label.grid(column=CENTER_COLUMN)
+title_label.grid(column=0, sticky= "n", columnspan=3)
 
 # Display examples
 SUBHEADING_SIZE = 16
@@ -50,8 +76,8 @@ UPLOAD_BUTTON_ROW = upload_image_button.grid_info()['row']
 image_filename = "d5m0yyl-279d77c8-dfbe-49e9-a009-63e87664d23a.png" # return value will be stored here
 if image_filename != "":
     uploaded_image = Image.open(image_filename)
-    width, height = uploaded_image.size
-    uploaded_image_ctk = customtkinter.CTkImage(light_image=uploaded_image, dark_image=uploaded_image, size=(width,height))
+    WINDOW_WIDTH, WINDOW_HEIGHT = uploaded_image.size
+    uploaded_image_ctk = customtkinter.CTkImage(light_image=uploaded_image, dark_image=uploaded_image, size=(WINDOW_WIDTH, WINDOW_HEIGHT))
     image_label = customtkinter.CTkLabel(app, image=uploaded_image_ctk, text="")
     #image_label.grid(column=CENTER_COLUMN)
 
@@ -104,9 +130,10 @@ def download_image():
 
 save_image_button = customtkinter.CTkButton(app, text="Save Image", command=save_image)
 download_image_button = customtkinter.CTkButton(app, text="Download Image", command=download_image)
-save_image_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
+
+save_image_button.grid(column=1, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 SAVE_BUTTON_ROW = save_image_button.grid_info()['row']
-download_image_button.grid(row=SAVE_BUTTON_ROW, column=1, padx=BUTTON_PADX, pady=BUTTON_PADY)
+download_image_button.grid(row=SAVE_BUTTON_ROW, column=2, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 
 # Saved images database
 saved_images_label = customtkinter.CTkLabel(app, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
