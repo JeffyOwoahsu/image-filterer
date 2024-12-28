@@ -5,6 +5,9 @@ from customtkinter import filedialog
 from PIL import Image
 
 from io_handler import validate_image
+from filter_generator import create_edge_detector
+from filter_generator import create_standard_blur
+from filter_generator import create_gaussian_blur
 
 APP_FONT = "Roboto"
 TITLE_SIZE = 24
@@ -12,6 +15,8 @@ SUBHEADING_SIZE = 16
 POPUP_SIZE = 14
 CENTER_COLUMN = 1
 BUTTON_PADX, BUTTON_PADY = 5, 5
+radio_button_row = 0
+selected_filter = 0
 
 class MyFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, **kwargs):
@@ -33,7 +38,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         self.example_image_ctk = customtkinter.CTkImage(light_image=self.example_image, dark_image=self.example_image,
                                                    size=(self.example_width, example_height))
         self.example_image_label = customtkinter.CTkLabel(self, image=self.example_image_ctk, text="")
-        self.example_image_label.grid(column=CENTER_COLUMN)
+        #self.example_image_label.grid(column=CENTER_COLUMN)
 
         # Create upload image button
         self.upload_image_label = customtkinter.CTkLabel(self, text="Upload an image (.png & .jpeg accepted)", font=(APP_FONT, SUBHEADING_SIZE - 2))
@@ -79,24 +84,28 @@ def display_uploaded_image(self, filepath):
     # Display uploaded image
     image_filename = filepath
     uploaded_image = Image.open(image_filename)
+    # TODO: show a scaled down version of the image
     window_width, window_height = uploaded_image.size
     uploaded_image_ctk = customtkinter.CTkImage(light_image=uploaded_image, dark_image=uploaded_image,
                                                     size=(window_width, window_height))
     image_label = customtkinter.CTkLabel(self, image=uploaded_image_ctk, text="")
     image_label.grid(column=CENTER_COLUMN)
-    display_radio_buttons(self)
+    display_radio_buttons(self, uploaded_image)
 
-def display_radio_buttons(self):
+def display_radio_buttons(self, image):
     selected_filter = tkinter.IntVar(value=0)
+    edge_detector_num = 1
+    standard_blur_num = 2
+    gaussian_blur_num = 3
     edge_detector_button = customtkinter.CTkRadioButton(self, text="Edge Detector",
-                                                        command=edge_detector_button_event,
-                                                        variable=selected_filter, value=1)
+                                                        command=lambda:filter_button_event(self, image, edge_detector_num),
+                                                        variable=selected_filter, value=edge_detector_num)
     standard_blur_button = customtkinter.CTkRadioButton(self, text="Standard Blur",
-                                                        command=standard_blur_button_event,
-                                                        variable=selected_filter, value=2)
+                                                        command=lambda:filter_button_event(self, image, standard_blur_num),
+                                                        variable=selected_filter, value=standard_blur_num)
     gaussian_blur_button = customtkinter.CTkRadioButton(self, text="Gaussian Blur",
-                                                        command=gaussian_blur_button_event,
-                                                        variable=selected_filter, value=3)
+                                                        command=lambda:filter_button_event(self, image, gaussian_blur_num),
+                                                        variable=selected_filter, value=gaussian_blur_num)
 
     edge_detector_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
     radio_button_row = edge_detector_button.grid_info()['row']
@@ -104,19 +113,15 @@ def display_radio_buttons(self):
     gaussian_blur_button.grid(column=2, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 
 
-def display_filtered_image(self):
-    # Display filtered image
-    # TODO: setting filtered image as a result of convolution
-    filtered_image = Image.open("456a3ef5ad740d98ff78fab775c69c98.jpg")  # Returned image will be stored here
-    filtered_image_width, filtered_image_height = filtered_image.size
-    filtered_image_ctk = customtkinter.CTkImage(light_image=filtered_image, dark_image=filtered_image,
+def display_filtered_image(self, image):
+    filtered_image_width, filtered_image_height = image.size
+    filtered_image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image,
                                                 size=(filtered_image_width, filtered_image_height))
     filtered_image_label = customtkinter.CTkLabel(self, image=filtered_image_ctk, text="")
-    # filtered_image_label.grid(column=CENTER_COLUMN)
+    filtered_image_label.grid(column=CENTER_COLUMN)
     display_save_and_download_buttons(self)
 
 def display_save_and_download_buttons(self):
-    # Save and download buttons
     save_image_button = customtkinter.CTkButton(self, text="Save Image", command=save_image)
     download_image_button = customtkinter.CTkButton(self, text="Download Image", command=download_image)
 
@@ -125,18 +130,32 @@ def display_save_and_download_buttons(self):
     download_image_button.grid(row=save_button_row, column=2, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 
 # Display filtering options
-# Make sure these functions are only called once
-def edge_detector_button_event():
-    # TODO: implement
-    print("radiobutton toggled, edge detector:")
+def filter_button_event(self, image, filter_selection):
+    if filter_selection != filter_button_event.previous_selection:
+        match filter_selection:
+            case 1:
+                edge_detector_button_event(self, image)
+            case 2:
+                standard_blur_button_event(self, image)
+            case 3:
+                gaussian_blur_button_event(self, image)
+        filter_button_event.previous_selection = filter_selection
 
-def standard_blur_button_event():
+filter_button_event.previous_selection = None
+
+def edge_detector_button_event(self, image):
+    filtered_image = create_edge_detector(image)
+    display_filtered_image(self, filtered_image)
+
+def standard_blur_button_event(self, image):
     # TODO: implement
     print("radiobutton toggled, standard blur:")
 
-def gaussian_blur_button_event():
+
+def gaussian_blur_button_event(self, image):
     # TODO: implement
     print("radiobutton toggled, gaussian blur:")
+
 
 # Display save image button and download image button
 def save_image():
