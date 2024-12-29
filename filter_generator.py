@@ -38,13 +38,90 @@ def create_edge_detector(image):
     result_x = np.abs(ifft2(result_x_fft))
     result_y = np.abs(ifft2(result_y_fft))
 
-    # Compute the magnitude and normalize it
+    # Compute the magnitude
     edge_magnitude = np.sqrt(result_x ** 2 + result_y ** 2)
 
     return Image.fromarray(edge_magnitude)
 
 def create_standard_blur(image):
-    print()
+    # Convert to NumPy array
+    image_array = np.array(image, dtype=np.float32)
+
+    # Create kernel
+    kernel = np.array([[1, 1, 1],
+                       [1, 1, 1],
+                       [1, 1, 1]], dtype=np.float32)
+
+    # Normalize kernel
+    kernel /= kernel.sum()
+
+    # Process each channel separately
+    processed_channels = []
+    for channel in range(image_array.shape[2]):  # Assuming the image has 3 channels (RGB)
+        channel_data = image_array[:, :, channel]
+
+        # Apply FFT on the channel
+        channel_fft = fft2(channel_data)
+
+        # Create padded kernel
+        padded_kernel = np.zeros_like(channel_data)
+        k_h, k_w = kernel.shape
+        padded_kernel[:k_h, :k_w] = kernel
+
+        # Apply FFT on kernel
+        kernel_fft = fft2(padded_kernel)
+
+        # Convolve
+        result_fft = channel_fft * kernel_fft
+
+        # Transform back to spatial domain
+        result = np.abs(ifft2(result_fft))
+
+        # Normalize result
+        #result = (result - result.min()) / (result.max() - result.min()) * 255
+        processed_channels.append(result.astype(np.uint8))
+
+    # Stack the processed channels back into an image
+    processed_image = np.stack(processed_channels, axis=-1)
+    return Image.fromarray(processed_image)
 
 def create_gaussian_blur(image):
-    print()
+    image_array = np.array(image, dtype=np.float32)
+
+    # Create kernel
+    kernel = np.array([[1, 2, 1],
+                       [2, 4, 2],
+                       [1, 2, 1]], dtype=np.float32)
+
+    # Normalize kernel
+    kernel /= kernel.sum()
+
+    # Process each channel separately
+    processed_channels = []
+    for channel in range(image_array.shape[2]):  # Assuming the image has 3 channels (RGB)
+        channel_data = image_array[:, :, channel]
+
+        # Apply FFT on the channel
+        channel_fft = fft2(channel_data)
+
+        # Create padded kernel
+        padded_kernel = np.zeros_like(channel_data)
+        k_h, k_w = kernel.shape
+        padded_kernel[:k_h, :k_w] = kernel
+
+        # Apply FFT on kernel
+        kernel_fft = fft2(padded_kernel)
+
+        # Convolve
+        result_fft = channel_fft * kernel_fft
+
+        # Transform back to spatial domain
+        result = np.abs(ifft2(result_fft))
+
+        # Normalize result
+        # result = (result - result.min()) / (result.max() - result.min()) * 255
+        processed_channels.append(result.astype(np.uint8))
+
+    # Stack the processed channels back into an image
+    processed_image = np.stack(processed_channels, axis=-1)
+    return Image.fromarray(processed_image)

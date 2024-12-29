@@ -148,13 +148,13 @@ def edge_detector_button_event(self, image):
     display_filtered_image(self, filtered_image)
 
 def standard_blur_button_event(self, image):
-    # TODO: implement
-    print("radiobutton toggled, standard blur:")
+    filtered_image = create_standard_blur(image)
+    display_filtered_image(self, filtered_image)
 
 
 def gaussian_blur_button_event(self, image):
-    # TODO: implement
-    print("radiobutton toggled, gaussian blur:")
+    filtered_image = create_gaussian_blur(image)
+    display_filtered_image(self, filtered_image)
 
 
 # Display save image button and download image button
