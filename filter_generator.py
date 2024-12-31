@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image
-from scipy.fftpack import fft2, ifft2, fftshift
+from scipy.fftpack import fft2, ifft2
 
 def create_edge_detector(image):
     # Create greyscale version of the image
@@ -10,7 +10,7 @@ def create_edge_detector(image):
     image_array = np.array(greyscale, dtype=np.float32)
     image_fft = fft2(image_array)
 
-    # Create x and y kernels and apply FFT on them
+    # Define x and y kernels
     kernel_x = np.array([[-1, 0, 1],
                          [-2, 0, 2],
                          [-1, 0, 1]], dtype=np.float32)
@@ -19,12 +19,8 @@ def create_edge_detector(image):
                          [1, 2, 1]], dtype=np.float32)
 
     # Pad the kernels to the size of the image
-    padded_kernel_x = np.zeros_like(image_array)
-    padded_kernel_y = np.zeros_like(image_array)
-    kx_h, kx_w = kernel_x.shape
-    ky_h, ky_w = kernel_y.shape
-    padded_kernel_x[:kx_h, :kx_w] = kernel_x
-    padded_kernel_y[:ky_h, :ky_w] = kernel_y
+    padded_kernel_x = pad_kernel(kernel_x, image_array)
+    padded_kernel_y = pad_kernel(kernel_y, image_array)
 
     # Apply FFT on the kernels
     kernel_x_fft = fft2(padded_kernel_x)
@@ -44,54 +40,31 @@ def create_edge_detector(image):
     return Image.fromarray(edge_magnitude)
 
 def create_standard_blur(image):
-    # Convert to NumPy array
-    image_array = np.array(image, dtype=np.float32)
+    kernel = np.array([[1, 1, 1, 1],
+                       [1, 1, 1, 1],
+                       [1, 1, 1, 1],
+                       [1, 1, 1, 1]], dtype=np.float32)
 
-    # Create kernel
-    kernel = np.array([[1, 1, 1],
-                       [1, 1, 1],
-                       [1, 1, 1]], dtype=np.float32)
-
-    # Normalize kernel
-    kernel /= kernel.sum()
-
-    # Process each channel separately
-    processed_channels = []
-    for channel in range(image_array.shape[2]):  # Assuming the image has 3 channels (RGB)
-        channel_data = image_array[:, :, channel]
-
-        # Apply FFT on the channel
-        channel_fft = fft2(channel_data)
-
-        # Create padded kernel
-        padded_kernel = np.zeros_like(channel_data)
-        k_h, k_w = kernel.shape
-        padded_kernel[:k_h, :k_w] = kernel
-
-        # Apply FFT on kernel
-        kernel_fft = fft2(padded_kernel)
-
-        # Convolve
-        result_fft = channel_fft * kernel_fft
-
-        # Transform back to spatial domain
-        result = np.abs(ifft2(result_fft))
-
-        # Normalize result
-        #result = (result - result.min()) / (result.max() - result.min()) * 255
-        processed_channels.append(result.astype(np.uint8))
-
-    # Stack the processed channels back into an image
-    processed_image = np.stack(processed_channels, axis=-1)
-    return Image.fromarray(processed_image)
+    return blur_image(image, kernel)
 
 def create_gaussian_blur(image):
-    image_array = np.array(image, dtype=np.float32)
+    kernel = np.array([[1, 1, 2, 1, 1],
+                       [1, 2, 4, 2, 1],
+                       [2, 4, 8, 4, 2],
+                       [1, 2, 4, 2, 1],
+                       [1, 1, 2, 1, 1]], dtype=np.float32)
 
-    # Create kernel
-    kernel = np.array([[1, 2, 1],
-                       [2, 4, 2],
-                       [1, 2, 1]], dtype=np.float32)
+    return blur_image(image, kernel)
+
+# Helper Methods
+def pad_kernel(kernel, data):
+    padded_kernel = np.zeros_like(data)
+    k_h, k_w = kernel.shape
+    padded_kernel[:k_h, :k_w] = kernel
+    return padded_kernel
+
+def blur_image(image, kernel):
+    image_array = np.array(image, dtype=np.float32)
 
     # Normalize kernel
     kernel /= kernel.sum()
@@ -105,9 +78,7 @@ def create_gaussian_blur(image):
         channel_fft = fft2(channel_data)
 
         # Create padded kernel
-        padded_kernel = np.zeros_like(channel_data)
-        k_h, k_w = kernel.shape
-        padded_kernel[:k_h, :k_w] = kernel
+        padded_kernel = pad_kernel(kernel, channel_data)
 
         # Apply FFT on kernel
         kernel_fft = fft2(padded_kernel)
@@ -118,8 +89,6 @@ def create_gaussian_blur(image):
         # Transform back to spatial domain
         result = np.abs(ifft2(result_fft))
 
-        # Normalize result
-        # result = (result - result.min()) / (result.max() - result.min()) * 255
         processed_channels.append(result.astype(np.uint8))
 
     # Stack the processed channels back into an image

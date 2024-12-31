@@ -17,6 +17,7 @@ CENTER_COLUMN = 1
 BUTTON_PADX, BUTTON_PADY = 5, 5
 radio_button_row = 0
 selected_filter = 0
+image_spawn_row = 0
 
 class MyFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, **kwargs):
@@ -65,7 +66,6 @@ class App(customtkinter.CTk):
         self.my_frame.grid(row=0, column=0, columnspan=3, sticky="nsew")
 
 
-# Upload image button
 def upload_new_image(self):
     filepath = filedialog.askopenfile().name
     if validate_image(filepath):
@@ -81,7 +81,6 @@ def upload_new_image(self):
         return ""
 
 def display_uploaded_image(self, filepath):
-    # Display uploaded image
     image_filename = filepath
     uploaded_image = Image.open(image_filename)
     # TODO: show a scaled down version of the image
@@ -109,6 +108,7 @@ def display_radio_buttons(self, image):
 
     edge_detector_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
     radio_button_row = edge_detector_button.grid_info()['row']
+    image_spawn_row = radio_button_row + 1
     standard_blur_button.grid(column=1, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY)
     gaussian_blur_button.grid(column=2, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 
@@ -118,12 +118,13 @@ def display_filtered_image(self, image):
     filtered_image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image,
                                                 size=(filtered_image_width, filtered_image_height))
     filtered_image_label = customtkinter.CTkLabel(self, image=filtered_image_ctk, text="")
+    # TODO: replace an image if it is already in place
     filtered_image_label.grid(column=CENTER_COLUMN)
     display_save_and_download_buttons(self)
 
 def display_save_and_download_buttons(self):
     save_image_button = customtkinter.CTkButton(self, text="Save Image", command=save_image)
-    download_image_button = customtkinter.CTkButton(self, text="Download Image", command=download_image)
+    download_image_button = customtkinter.CTkButton(self, text="Download Image", command=filedialog.asksaveasfilename)
 
     save_image_button.grid(column=1, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
     save_button_row = save_image_button.grid_info()['row']
@@ -139,6 +140,8 @@ def filter_button_event(self, image, filter_selection):
                 standard_blur_button_event(self, image)
             case 3:
                 gaussian_blur_button_event(self, image)
+            case _:
+                print("An error has occurred")
         filter_button_event.previous_selection = filter_selection
 
 filter_button_event.previous_selection = None
@@ -163,5 +166,4 @@ def save_image():
     print("saved")
 
 def download_image():
-    # TODO: implement
-    print("downloaded")
+    filedialog.asksaveasfilename()
