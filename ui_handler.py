@@ -1,18 +1,22 @@
 import tkinter
 from tkinter.constants import CENTER
 
+import io
+
 import customtkinter
 from customtkinter import filedialog
 from PIL import Image
 
-from io_handler import validate_image
+from io_handler import validate_image, convert_json_to_image
+from io_handler import convert_image_to_json
+
 from filter_generator import create_edge_detector
 from filter_generator import create_standard_blur
 from filter_generator import create_gaussian_blur
 
 from database_driver import initialize_database
-from database_driver import insert_image
-from database_driver import retrieve_image
+from database_driver import insert_image_to_database
+from database_driver import retrieve_image_from_database
 from database_driver import get_number_of_images
 
 APP_FONT = "Roboto"
@@ -26,7 +30,6 @@ selected_filter = 0
 # Global variables
 image_displayed = False
 image_spawn_row = None
-saved_image = None
 
 class MyFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, **kwargs):
@@ -58,8 +61,8 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         self.UPLOAD_BUTTON_ROW = self.upload_image_button.grid_info()['row']
 
         # Saved images database
-        #initialize_database()
-        #display_save_images(self)
+        initialize_database()
+        display_save_images(self)
 
 
 class App(customtkinter.CTk):
@@ -115,7 +118,7 @@ def display_radio_buttons(self, image):
                                                         variable=selected_filter, value=gaussian_blur_num)
 
     edge_detector_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
-    radio_button_row = edge_detector_button.grid_info()['row']
+    #radio_button_row = edge_detector_button.grid_info()['row']
     standard_blur_button.grid(column=1, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY)
     gaussian_blur_button.grid(column=2, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 
@@ -184,22 +187,25 @@ def save_image(image):
     image_name = dialog.get_input()
     if image_name is None:
         raise Exception("User pressed cancel.")
-    #insert_image(image, image_name)
+    image_data = convert_image_to_json(image)
+    insert_image_to_database(image_data, image_name)
 
 def display_save_images(self):
     num_of_images = get_number_of_images()
-    if num_of_images == 0:
-        return
-    else:
-        saved_images_label = customtkinter.CTkLabel(self, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
-        saved_images_label.grid(column=CENTER_COLUMN)
-        for image_id in range(num_of_images):
-            image, image_name = retrieve_image(image_id)
-
-            image_width, image_height = image.size
-            image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image, size=(image_width, image_height))
-            image_label = customtkinter.CTkLabel(self, image=image_ctk, text="")
-            image_name_label = customtkinter.CTkLabel(self, text=image_name, font=(APP_FONT, POPUP_SIZE))
-
-            image_name_label.grid()
-            image_label.grid()
+    print(num_of_images)
+    # if num_of_images == 0:
+    #     return
+    # else:
+    #     saved_images_label = customtkinter.CTkLabel(self, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
+    #     saved_images_label.grid(column=CENTER_COLUMN)
+    #     for image_id in range(num_of_images):
+    #         image_data, image_name = retrieve_image_from_database(image_id)
+    #         image = convert_json_to_image(image_data)
+    #
+    #         image_width, image_height = image.size
+    #         image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image, size=(image_width, image_height))
+    #         image_label = customtkinter.CTkLabel(self, image=image_ctk, text="")
+    #         image_name_label = customtkinter.CTkLabel(self, text=image_name, font=(APP_FONT, POPUP_SIZE))
+    #
+    #         image_name_label.grid()
+    #         image_label.grid()

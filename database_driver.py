@@ -1,6 +1,6 @@
 import sqlite3
 
-database_name = 'placeholder.db'
+database_name = 'store_images.db'
 
 def initialize_database():
     connection = sqlite3.connect(database_name)
@@ -8,29 +8,32 @@ def initialize_database():
 
     cursor.execute('''CREATE TABLE IF NOT EXISTS images
                  (image_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                 image_data BLOB NOT NULL,
+                 image_data TEXT NOT NULL,
                  image_name TEXT NOT NULL)''')
 
     connection.commit()
     connection.close()
 
-def insert_image(image_data, image_name):
+def insert_image_to_database(image_data, image_name):
     connection = sqlite3.connect(database_name)
     cursor = connection.cursor()
-    query = "INSERT INTO images (image_data, image_name) VALUES (%s, %s)"
+    query = "INSERT INTO images (image_data, image_name) VALUES (?, ?)"
     values = (image_data, image_name)
     cursor.execute(query, values)
     connection.commit()
     connection.close()
 
-def retrieve_image(image_id):
+def retrieve_image_from_database(image_id):
     connection = sqlite3.connect(database_name)
     cursor = connection.cursor()
-    query = "SELECT image_data, image_name FROM images WHERE image_id = (%s,)"
+    query = "SELECT image_data, image_name FROM images WHERE image_id = ?"
     value = (image_id,)
     cursor.execute(query, value)
     row = cursor.fetchone()
-    return row[0], row[1]
+    if row is not None:
+        return row[0], row[1]
+    else:
+        raise Exception("Something we wrong in the database.")
 
 def get_number_of_images():
     connection = sqlite3.connect(database_name)
