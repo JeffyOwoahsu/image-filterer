@@ -7,26 +7,18 @@ import customtkinter
 from customtkinter import filedialog
 from PIL import Image
 
-from io_handler import validate_image, convert_json_to_image
-from io_handler import convert_image_to_json
-
-from filter_generator import create_edge_detector
-from filter_generator import create_standard_blur
-from filter_generator import create_gaussian_blur
-
-from database_driver import initialize_database
-from database_driver import insert_image_to_database
-from database_driver import retrieve_image_from_database
-from database_driver import get_number_of_images
+from io_handler import validate_image, convert_json_to_image, convert_image_to_json
+from filter_generator import create_edge_detector, create_standard_blur, create_gaussian_blur
+from database_driver import initialize_database, insert_image_to_database, retrieve_image_from_database, get_number_of_images
 
 APP_FONT = "Roboto"
 TITLE_SIZE = 24
 SUBHEADING_SIZE = 16
 POPUP_SIZE = 14
-CENTER_COLUMN = 1
+CENTER_COLUMN = 2
 BUTTON_PADX, BUTTON_PADY = 5, 5
-radio_button_row = 0
 selected_filter = 0
+
 # Global variables
 image_displayed = False
 image_spawn_row = None
@@ -37,21 +29,21 @@ class MyFrame(customtkinter.CTkScrollableFrame):
 
         # Create title
         self.title_label = customtkinter.CTkLabel(self, text="Image Filterer", font=(APP_FONT, TITLE_SIZE))
-        self.title_label.grid(column=0, sticky="n", columnspan=3)
+        self.title_label.grid(column=CENTER_COLUMN, sticky="n")
 
-        # Create explanation and example
+        # Create explanation
         self.explanation = customtkinter.CTkLabel(self, text="Upload an image and choose a filter to modify the image.",
                                              font=(APP_FONT, SUBHEADING_SIZE))
-        self.explanation.grid(column=0, columnspan=3, sticky="ew")
+        self.explanation.grid(column=CENTER_COLUMN, sticky="ew")
 
-        self.example = customtkinter.CTkLabel(self, text="Example", font=(APP_FONT, SUBHEADING_SIZE))
-        self.example.grid(column=CENTER_COLUMN)
-        self.example_image = Image.open("456a3ef5ad740d98ff78fab775c69c98.jpg")
-        self.example_width, example_height = self.example_image.size
-        self.example_image_ctk = customtkinter.CTkImage(light_image=self.example_image, dark_image=self.example_image,
-                                                   size=(self.example_width, example_height))
-        self.example_image_label = customtkinter.CTkLabel(self, image=self.example_image_ctk, text="")
-        #self.example_image_label.grid(column=CENTER_COLUMN)
+        # self.example = customtkinter.CTkLabel(self, text="Example", font=(APP_FONT, SUBHEADING_SIZE))
+        # self.example.grid(column=CENTER_COLUMN)
+        # self.example_image = Image.open("456a3ef5ad740d98ff78fab775c69c98.jpg")
+        # self.example_width, example_height = self.example_image.size
+        # self.example_image_ctk = customtkinter.CTkImage(light_image=self.example_image, dark_image=self.example_image,
+        #                                            size=(self.example_width, example_height))
+        # self.example_image_label = customtkinter.CTkLabel(self, image=self.example_image_ctk, text="")
+        # #self.example_image_label.grid(column=CENTER_COLUMN)
 
         # Create upload image button
         self.upload_image_label = customtkinter.CTkLabel(self, text="Upload an image (.png & .jpeg accepted)", font=(APP_FONT, SUBHEADING_SIZE - 2))
@@ -118,7 +110,7 @@ def display_radio_buttons(self, image):
                                                         variable=selected_filter, value=gaussian_blur_num)
 
     edge_detector_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
-    #radio_button_row = edge_detector_button.grid_info()['row']
+    radio_button_row = edge_detector_button.grid_info()['row']
     standard_blur_button.grid(column=1, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY)
     gaussian_blur_button.grid(column=2, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 
@@ -192,20 +184,20 @@ def save_image(image):
 
 def display_save_images(self):
     num_of_images = get_number_of_images()
-    print(num_of_images)
-    # if num_of_images == 0:
-    #     return
-    # else:
-    #     saved_images_label = customtkinter.CTkLabel(self, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
-    #     saved_images_label.grid(column=CENTER_COLUMN)
-    #     for image_id in range(num_of_images):
-    #         image_data, image_name = retrieve_image_from_database(image_id)
-    #         image = convert_json_to_image(image_data)
-    #
-    #         image_width, image_height = image.size
-    #         image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image, size=(image_width, image_height))
-    #         image_label = customtkinter.CTkLabel(self, image=image_ctk, text="")
-    #         image_name_label = customtkinter.CTkLabel(self, text=image_name, font=(APP_FONT, POPUP_SIZE))
-    #
-    #         image_name_label.grid()
-    #         image_label.grid()
+    if num_of_images == 0:
+        return
+    else:
+        saved_images_label = customtkinter.CTkLabel(self, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
+        saved_images_label.grid(column=CENTER_COLUMN)
+        for image_id in range(1, num_of_images + 1):
+            print("Image id: ", image_id)
+            image_data, image_name = retrieve_image_from_database(image_id)
+            image = convert_json_to_image(image_data)
+
+            image_width, image_height = image.size
+            image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image, size=(image_width, image_height))
+            image_label = customtkinter.CTkLabel(self, image=image_ctk, text="")
+            image_name_label = customtkinter.CTkLabel(self, text=image_name, font=(APP_FONT, SUBHEADING_SIZE))
+
+            image_name_label.grid(column=CENTER_COLUMN)
+            image_label.grid(column=CENTER_COLUMN)

@@ -33,12 +33,12 @@ def retrieve_image_from_database(image_id):
     if row is not None:
         return row[0], row[1]
     else:
-        raise Exception("Something we wrong in the database.")
+        raise Exception("Something went wrong in the database.")
 
 def get_number_of_images():
     connection = sqlite3.connect(database_name)
     cursor = connection.cursor()
-    cursor.execute("SELECT COUNT(*) FROM images")
+    cursor.execute("SELECT * FROM images")
     row_count = len(cursor.fetchall())
 
     connection.commit()
