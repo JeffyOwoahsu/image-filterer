@@ -15,7 +15,7 @@ APP_FONT = "Roboto"
 TITLE_SIZE = 24
 SUBHEADING_SIZE = 16
 POPUP_SIZE = 14
-CENTER_COLUMN = 2
+CENTER_COLUMN = 0 # must be used with columnspan = 3
 BUTTON_PADX, BUTTON_PADY = 5, 5
 selected_filter = 0
 
@@ -27,14 +27,16 @@ class MyFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
+        self.grid_columnconfigure((0, 1, 2), weight=1, uniform='a')
+
         # Create title
         self.title_label = customtkinter.CTkLabel(self, text="Image Filterer", font=(APP_FONT, TITLE_SIZE))
-        self.title_label.grid(column=CENTER_COLUMN, sticky="n")
+        self.title_label.grid(column=CENTER_COLUMN, sticky="n", columnspan=3)
 
         # Create explanation
         self.explanation = customtkinter.CTkLabel(self, text="Upload an image and choose a filter to modify the image.",
                                              font=(APP_FONT, SUBHEADING_SIZE))
-        self.explanation.grid(column=CENTER_COLUMN, sticky="ew")
+        self.explanation.grid(column=CENTER_COLUMN, sticky="ew", columnspan=3)
 
         # self.example = customtkinter.CTkLabel(self, text="Example", font=(APP_FONT, SUBHEADING_SIZE))
         # self.example.grid(column=CENTER_COLUMN)
@@ -47,9 +49,9 @@ class MyFrame(customtkinter.CTkScrollableFrame):
 
         # Create upload image button
         self.upload_image_label = customtkinter.CTkLabel(self, text="Upload an image (.png & .jpeg accepted)", font=(APP_FONT, SUBHEADING_SIZE - 2))
-        self.upload_image_label.grid(column=CENTER_COLUMN)
+        self.upload_image_label.grid(column=CENTER_COLUMN, columnspan=3)
         self.upload_image_button = customtkinter.CTkButton(self, text="Upload image", command=lambda: upload_new_image(self))
-        self.upload_image_button.grid(column=CENTER_COLUMN, pady=5)
+        self.upload_image_button.grid(column=CENTER_COLUMN, pady=5, columnspan=3)
         self.UPLOAD_BUTTON_ROW = self.upload_image_button.grid_info()['row']
 
         # Saved images database
@@ -87,11 +89,12 @@ def display_uploaded_image(self, filepath):
     image_filename = filepath
     uploaded_image = Image.open(image_filename)
     # TODO: show a scaled down version of the image
+    # TODO: if re-upload then replace current image
     window_width, window_height = uploaded_image.size
     uploaded_image_ctk = customtkinter.CTkImage(light_image=uploaded_image, dark_image=uploaded_image,
                                                     size=(window_width, window_height))
     image_label = customtkinter.CTkLabel(self, image=uploaded_image_ctk, text="")
-    image_label.grid(column=CENTER_COLUMN)
+    image_label.grid(column=CENTER_COLUMN, columnspan=3)
     display_radio_buttons(self, uploaded_image)
 
 def display_radio_buttons(self, image):
@@ -123,7 +126,7 @@ def display_filtered_image(self, image):
                                                 size=(filtered_image_width, filtered_image_height))
     filtered_image_label = customtkinter.CTkLabel(self, image=filtered_image_ctk, text="")
     if not image_displayed:
-        filtered_image_label.grid(column=CENTER_COLUMN)
+        filtered_image_label.grid(column=CENTER_COLUMN, columnspan=3)
         image_spawn_row = filtered_image_label.grid_info()['row']
         image_displayed = True
         should_grid_buttons = True
@@ -132,7 +135,7 @@ def display_filtered_image(self, image):
             if widget.grid_info()['row'] == image_spawn_row:
                 widget.destroy()
                 break
-        filtered_image_label.grid(row=image_spawn_row, column=CENTER_COLUMN)
+        filtered_image_label.grid(row=image_spawn_row, column=CENTER_COLUMN, columnspan=3)
         should_grid_buttons = False
     display_save_and_download_buttons(self, image, should_grid_buttons)
 
@@ -188,9 +191,8 @@ def display_save_images(self):
         return
     else:
         saved_images_label = customtkinter.CTkLabel(self, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
-        saved_images_label.grid(column=CENTER_COLUMN)
+        saved_images_label.grid(column=CENTER_COLUMN, columnspan=3)
         for image_id in range(1, num_of_images + 1):
-            print("Image id: ", image_id)
             image_data, image_name = retrieve_image_from_database(image_id)
             image = convert_json_to_image(image_data)
 
@@ -199,5 +201,5 @@ def display_save_images(self):
             image_label = customtkinter.CTkLabel(self, image=image_ctk, text="")
             image_name_label = customtkinter.CTkLabel(self, text=image_name, font=(APP_FONT, SUBHEADING_SIZE))
 
-            image_name_label.grid(column=CENTER_COLUMN)
-            image_label.grid(column=CENTER_COLUMN)
+            image_name_label.grid(column=CENTER_COLUMN, columnspan=3)
+            image_label.grid(column=CENTER_COLUMN, columnspan=3)
