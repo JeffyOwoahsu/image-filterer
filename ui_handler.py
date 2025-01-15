@@ -20,14 +20,23 @@ BUTTON_PADX, BUTTON_PADY = 5, 5
 selected_filter = 0
 
 # Global variables
-image_displayed = False
-image_spawn_row = None
+image_uploaded = False
+uploaded_image_spawn_row = None
+filtered_image_displayed = False
+filtered_image_spawn_row = None
 
 class MyFrame(customtkinter.CTkScrollableFrame):
+    def _on_mousewheel(self, event):
+        scroll_speed = -45
+        self._parent_canvas.yview_scroll(int(scroll_speed * (event.delta / 120)), "units")
+
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
         self.grid_columnconfigure((0, 1, 2), weight=1, uniform='a')
+
+        # Configure mousewheel speed
+        self.bind_all('<MouseWheel>', self._on_mousewheel)
 
         # Create title
         self.title_label = customtkinter.CTkLabel(self, text="Image Filterer", font=(APP_FONT, TITLE_SIZE))
@@ -64,9 +73,9 @@ class App(customtkinter.CTk):
         super().__init__()
         self.grid_columnconfigure((0,1,2), weight=1, uniform='a')
         self.grid_rowconfigure(0, weight=1)
-        window_width = self.winfo_width()
-        window_height = self.winfo_height()
-        self.geometry(f"{window_width}x{window_height}-10+0")
+        window_width = self.winfo_screenwidth()
+        window_height = self.winfo_screenwidth()
+        self.geometry(f"{window_width}x{window_height}+0+0")
         self.my_frame = MyFrame(master=self, width=window_width, height=window_height, corner_radius=0, fg_color="transparent")
         self.my_frame.grid(row=0, column=0, columnspan=3, sticky="nsew")
 
@@ -86,15 +95,24 @@ def upload_new_image(self):
         return ""
 
 def display_uploaded_image(self, filepath):
+    global image_uploaded, uploaded_image_spawn_row
     image_filename = filepath
     uploaded_image = Image.open(image_filename)
     # TODO: show a scaled down version of the image
-    # TODO: if re-upload then replace current image
     window_width, window_height = uploaded_image.size
     uploaded_image_ctk = customtkinter.CTkImage(light_image=uploaded_image, dark_image=uploaded_image,
                                                     size=(window_width, window_height))
     image_label = customtkinter.CTkLabel(self, image=uploaded_image_ctk, text="")
-    image_label.grid(column=CENTER_COLUMN, columnspan=3)
+    if not image_uploaded:
+        image_label.grid(column=CENTER_COLUMN, columnspan=3)
+        uploaded_image_spawn_row = image_label.grid_info()['row']
+        image_uploaded = True
+    else:
+        for widget in self.grid_slaves():
+            if widget.grid_info()['row'] == uploaded_image_spawn_row:
+                widget.destroy()
+                break
+            image_label.grid(row=uploaded_image_spawn_row, column=CENTER_COLUMN, columnspan=3)
     display_radio_buttons(self, uploaded_image)
 
 def display_radio_buttons(self, image):
@@ -119,23 +137,23 @@ def display_radio_buttons(self, image):
 
 
 def display_filtered_image(self, image):
-    global image_spawn_row, image_displayed
+    global filtered_image_spawn_row, filtered_image_displayed
     should_grid_buttons = None
     filtered_image_width, filtered_image_height = image.size
     filtered_image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image,
                                                 size=(filtered_image_width, filtered_image_height))
     filtered_image_label = customtkinter.CTkLabel(self, image=filtered_image_ctk, text="")
-    if not image_displayed:
+    if not filtered_image_displayed:
         filtered_image_label.grid(column=CENTER_COLUMN, columnspan=3)
-        image_spawn_row = filtered_image_label.grid_info()['row']
-        image_displayed = True
+        filtered_image_spawn_row = filtered_image_label.grid_info()['row']
+        filtered_image_displayed = True
         should_grid_buttons = True
     else:
         for widget in self.grid_slaves():
-            if widget.grid_info()['row'] == image_spawn_row:
+            if widget.grid_info()['row'] == filtered_image_spawn_row:
                 widget.destroy()
                 break
-        filtered_image_label.grid(row=image_spawn_row, column=CENTER_COLUMN, columnspan=3)
+        filtered_image_label.grid(row=filtered_image_spawn_row, column=CENTER_COLUMN, columnspan=3)
         should_grid_buttons = False
     display_save_and_download_buttons(self, image, should_grid_buttons)
 
