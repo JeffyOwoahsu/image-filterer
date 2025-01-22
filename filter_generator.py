@@ -2,6 +2,18 @@ import numpy as np
 from PIL import Image
 from scipy.fftpack import fft2, ifft2
 
+
+def create_filter(filter_num, image):
+    match filter_num:
+        case 1:
+            return create_edge_detector(image)
+        case 2:
+            return create_standard_blur(image)
+        case 3:
+            return create_sharpen(image)
+        case _:
+            raise Exception("An image processing error has occurred")
+
 def create_edge_detector(image):
     # Create greyscale version of the image
     greyscale = image.convert("L")
@@ -45,16 +57,15 @@ def create_standard_blur(image):
                        [1, 1, 1, 1],
                        [1, 1, 1, 1]], dtype=np.float32)
 
-    return blur_image(image, kernel)
+    kernel /= kernel.sum() # Normalizes kernel
+    return process_channels(image, kernel)
 
-def create_gaussian_blur(image):
-    kernel = np.array([[1, 1, 2, 1, 1],
-                       [1, 2, 4, 2, 1],
-                       [2, 4, 8, 4, 2],
-                       [1, 2, 4, 2, 1],
-                       [1, 1, 2, 1, 1]], dtype=np.float32)
+def create_sharpen(image):
+    kernel = np.array([[0, -1, 0],
+                       [-1, 5, -1],
+                       [0, -1, 0]], dtype=np.float32)
 
-    return blur_image(image, kernel)
+    return process_channels(image, kernel)
 
 # Helper Methods
 def pad_kernel(kernel, data):
@@ -63,11 +74,8 @@ def pad_kernel(kernel, data):
     padded_kernel[:k_h, :k_w] = kernel
     return padded_kernel
 
-def blur_image(image, kernel):
+def process_channels(image, kernel):
     image_array = np.array(image, dtype=np.float32)
-
-    # Normalize kernel
-    kernel /= kernel.sum()
 
     # Process each channel separately
     processed_channels = []

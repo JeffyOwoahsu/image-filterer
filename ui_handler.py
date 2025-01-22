@@ -7,8 +7,8 @@ import customtkinter
 from customtkinter import filedialog
 from PIL import Image
 
-from io_handler import validate_image, convert_json_to_image, convert_image_to_json
-from filter_generator import create_edge_detector, create_standard_blur, create_gaussian_blur
+from io_handler import validate_image, convert_json_to_image, convert_image_to_json, download_image
+from filter_generator import create_filter
 from database_driver import initialize_database, insert_image_to_database, retrieve_image_from_database, get_number_of_images
 
 APP_FONT = "Roboto"
@@ -17,13 +17,22 @@ SUBHEADING_SIZE = 16
 POPUP_SIZE = 14
 CENTER_COLUMN = 0 # must be used with columnspan = 3
 BUTTON_PADX, BUTTON_PADY = 5, 5
-selected_filter = 0
+IMAGE_SCALE_VALUE = 2
+IMAGE_PADDING = 5
+#selected_filter = 0
+
 
 # Global variables
 image_uploaded = False
 uploaded_image_spawn_row = None
 filtered_image_displayed = False
 filtered_image_spawn_row = None
+saved_images_spawn_row = None
+
+edge_detector_button = None
+standard_blur_button = None
+sharpen_button = None
+uploaded_image = None
 
 class MyFrame(customtkinter.CTkScrollableFrame):
     def _on_mousewheel(self, event):
@@ -75,7 +84,7 @@ class App(customtkinter.CTk):
         self.grid_rowconfigure(0, weight=1)
         window_width = self.winfo_screenwidth()
         window_height = self.winfo_screenwidth()
-        self.geometry(f"{window_width}x{window_height}+0+0")
+        self.geometry(f"{window_width}x{window_height}-10+0")
         self.my_frame = MyFrame(master=self, width=window_width, height=window_height, corner_radius=0, fg_color="transparent")
         self.my_frame.grid(row=0, column=0, columnspan=3, sticky="nsew")
 
@@ -84,7 +93,7 @@ def upload_new_image(self):
     filepath = filedialog.askopenfile().name
     if validate_image(filepath):
         display_uploaded_image(self, filepath)
-    else: # TODO: do this better
+    else:
         error_popup = customtkinter.CTkFrame(self, width=300, height=150, corner_radius=10)
         error_popup.place(relx=0.5, rely=0.5, anchor="center")
 
@@ -95,51 +104,61 @@ def upload_new_image(self):
         return ""
 
 def display_uploaded_image(self, filepath):
-    global image_uploaded, uploaded_image_spawn_row
+    global image_uploaded, uploaded_image_spawn_row, uploaded_image
+    first_upload = None
+
     image_filename = filepath
     uploaded_image = Image.open(image_filename)
-    # TODO: show a scaled down version of the image
-    window_width, window_height = uploaded_image.size
+    width, height = uploaded_image.size
+    width /= IMAGE_SCALE_VALUE
+    height /= IMAGE_SCALE_VALUE
     uploaded_image_ctk = customtkinter.CTkImage(light_image=uploaded_image, dark_image=uploaded_image,
-                                                    size=(window_width, window_height))
+                                                    size=(width, height))
     image_label = customtkinter.CTkLabel(self, image=uploaded_image_ctk, text="")
     if not image_uploaded:
         image_label.grid(column=CENTER_COLUMN, columnspan=3)
         uploaded_image_spawn_row = image_label.grid_info()['row']
         image_uploaded = True
+        first_upload = True
     else:
         for widget in self.grid_slaves():
             if widget.grid_info()['row'] == uploaded_image_spawn_row:
                 widget.destroy()
                 break
             image_label.grid(row=uploaded_image_spawn_row, column=CENTER_COLUMN, columnspan=3)
-    display_radio_buttons(self, uploaded_image)
+        first_upload = False
+        display_filtered_image(self, uploaded_image)
+    display_radio_buttons(self, first_upload)
 
-def display_radio_buttons(self, image):
+def display_radio_buttons(self, first_upload):
+    global edge_detector_button, standard_blur_button, sharpen_button, uploaded_image
     selected_filter = tkinter.IntVar(value=0)
     edge_detector_num = 1
     standard_blur_num = 2
-    gaussian_blur_num = 3
+    sharpen_num = 3
+
     edge_detector_button = customtkinter.CTkRadioButton(self, text="Edge Detector",
-                                                        command=lambda:filter_button_event(self, image, edge_detector_num),
+                                                        command=lambda:filter_button_event(self, uploaded_image, edge_detector_num),
                                                         variable=selected_filter, value=edge_detector_num)
     standard_blur_button = customtkinter.CTkRadioButton(self, text="Standard Blur",
-                                                        command=lambda:filter_button_event(self, image, standard_blur_num),
+                                                        command=lambda:filter_button_event(self, uploaded_image, standard_blur_num),
                                                         variable=selected_filter, value=standard_blur_num)
-    gaussian_blur_button = customtkinter.CTkRadioButton(self, text="Gaussian Blur",
-                                                        command=lambda:filter_button_event(self, image, gaussian_blur_num),
-                                                        variable=selected_filter, value=gaussian_blur_num)
-
-    edge_detector_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
-    radio_button_row = edge_detector_button.grid_info()['row']
-    standard_blur_button.grid(column=1, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY)
-    gaussian_blur_button.grid(column=2, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
+    sharpen_button = customtkinter.CTkRadioButton(self, text="Sharpen",
+                                                        command=lambda:filter_button_event(self, uploaded_image, sharpen_num),
+                                                        variable=selected_filter, value=sharpen_num)
+    if first_upload:
+        edge_detector_button.grid(column=0, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="e")
+        radio_button_row = edge_detector_button.grid_info()['row']
+        standard_blur_button.grid(column=1, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY)
+        sharpen_button.grid(column=2, row=radio_button_row, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
 
 
 def display_filtered_image(self, image):
     global filtered_image_spawn_row, filtered_image_displayed
     should_grid_buttons = None
     filtered_image_width, filtered_image_height = image.size
+    filtered_image_width /= IMAGE_SCALE_VALUE
+    filtered_image_height /= IMAGE_SCALE_VALUE
     filtered_image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image,
                                                 size=(filtered_image_width, filtered_image_height))
     filtered_image_label = customtkinter.CTkLabel(self, image=filtered_image_ctk, text="")
@@ -159,38 +178,39 @@ def display_filtered_image(self, image):
 
 def display_save_and_download_buttons(self, image, should_grid):
     save_image_button = customtkinter.CTkButton(self, text="Save Image", command=lambda:save_image(image))
-    download_image_button = customtkinter.CTkButton(self, text="Download Image", command=filedialog.asksaveasfilename)
+    download_image_button = customtkinter.CTkButton(self, text="Download Image", command=lambda:download_image(image))
     if should_grid:
         save_image_button.grid(column=1, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
         save_button_row = save_image_button.grid_info()['row']
         download_image_button.grid(row=save_button_row, column=2, padx=BUTTON_PADX, pady=BUTTON_PADY, sticky="w")
+
 
 # Display filtering options
 def filter_button_event(self, image, filter_selection):
     if filter_selection != filter_button_event.previous_selection:
         match filter_selection:
             case 1:
-                edge_detector_button_event(self, image)
+                edge_detector_button_event(self, image, filter_selection)
             case 2:
-                standard_blur_button_event(self, image)
+                standard_blur_button_event(self, image, filter_selection)
             case 3:
-                gaussian_blur_button_event(self, image)
+                sharpen_button_event(self, image, filter_selection)
             case _:
                 raise Exception("An error has occurred.")
         filter_button_event.previous_selection = filter_selection
 
 filter_button_event.previous_selection = None
 
-def edge_detector_button_event(self, image):
-    filtered_image = create_edge_detector(image)
+def edge_detector_button_event(self, image, filter_num):
+    filtered_image = create_filter(filter_num, image)
     display_filtered_image(self, filtered_image)
 
-def standard_blur_button_event(self, image):
-    filtered_image = create_standard_blur(image)
+def standard_blur_button_event(self, image, filter_num):
+    filtered_image = create_filter(filter_num, image)
     display_filtered_image(self, filtered_image)
 
-def gaussian_blur_button_event(self, image):
-    filtered_image = create_gaussian_blur(image)
+def sharpen_button_event(self, image, filter_num):
+    filtered_image = create_filter(filter_num, image)
     display_filtered_image(self, filtered_image)
 
 
@@ -208,16 +228,25 @@ def display_save_images(self):
     if num_of_images == 0:
         return
     else:
+        top_border = customtkinter.CTkFrame(self, fg_color="black", height=2, width=self.winfo_screenwidth())
+        top_border.grid(column=CENTER_COLUMN, columnspan=3, pady=IMAGE_PADDING)
+
         saved_images_label = customtkinter.CTkLabel(self, text="Saved Images", font=(APP_FONT, SUBHEADING_SIZE))
         saved_images_label.grid(column=CENTER_COLUMN, columnspan=3)
+
         for image_id in range(1, num_of_images + 1):
             image_data, image_name = retrieve_image_from_database(image_id)
             image = convert_json_to_image(image_data)
 
             image_width, image_height = image.size
+            image_width /= IMAGE_SCALE_VALUE
+            image_height /= IMAGE_SCALE_VALUE
             image_ctk = customtkinter.CTkImage(light_image=image, dark_image=image, size=(image_width, image_height))
             image_label = customtkinter.CTkLabel(self, image=image_ctk, text="")
             image_name_label = customtkinter.CTkLabel(self, text=image_name, font=(APP_FONT, SUBHEADING_SIZE))
 
             image_name_label.grid(column=CENTER_COLUMN, columnspan=3)
-            image_label.grid(column=CENTER_COLUMN, columnspan=3)
+            image_label.grid(column=CENTER_COLUMN, columnspan=3, pady=IMAGE_PADDING)
+
+        bottom_border = customtkinter.CTkFrame(self, fg_color="black", height=2, width=self.winfo_screenwidth())
+        bottom_border.grid(column=CENTER_COLUMN, columnspan=3, pady=IMAGE_PADDING)
